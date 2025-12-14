@@ -4,6 +4,7 @@ import redis
 import asyncio
 import httpx
 import json
+import uvicorn
 from typing import List, Dict
 
 app = FastAPI()
@@ -12,6 +13,7 @@ app = FastAPI()
 try:
     cache = redis.Redis(host='hash-db', port=6379, decode_responses=True, socket_connect_timeout=5)
     cache.ping()
+    print("Redis connected successfully")
 except Exception as e:
     print(f"Warning: Redis connection failed: {e}")
     cache = None

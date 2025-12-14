@@ -8,10 +8,23 @@ app = Flask(__name__)
 
 # Load rules - compile all .yar files in /rules directory
 yar_files = glob.glob('/rules/**/*.yar', recursive=True)
+rules = None
 if yar_files:
-    rules = yara.compile(filepaths={f'rule_{i}': f for i, f in enumerate(yar_files[:10])})  # Limit to 10 rules for performance
-else:
-    rules = None
+    # Try to compile rules, skip files with errors
+    valid_rules = {}
+    for i, f in enumerate(yar_files[:10]):  # Limit to 10 rules for performance
+        try:
+            yara.compile(filepath=f)  # Test compile
+            valid_rules[f'rule_{i}'] = f
+        except:
+            print(f"Skipping problematic rule: {f}")
+    
+    if valid_rules:
+        try:
+            rules = yara.compile(filepaths=valid_rules)
+        except Exception as e:
+            print(f"Error compiling rules: {e}")
+            rules = None
 
 @app.route('/scan', methods=['POST'])
 def scan():

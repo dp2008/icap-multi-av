@@ -1,5 +1,5 @@
-import icapeg
-from icapeg import ICAPServer, BaseICAPRequestHandler
+import icap
+from icap import ICAPServer, BaseICAPRequestHandler
 import requests
 import io
 

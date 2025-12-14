@@ -27,8 +27,7 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      core-api:
-        condition: service_healthy
+      - core-api
     networks:
       - multiscanner
 

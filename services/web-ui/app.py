@@ -89,13 +89,24 @@ def scan():
                 if isinstance(engine_result, dict)
             )
             
+            # Calculate hash
+            import hashlib
+            file.stream.seek(0)
+            file_hash = hashlib.sha256(file.stream.read()).hexdigest()
+            file.stream.seek(0)
+            
+            # Check if from cache
+            from_cache = result.get('from_cache', False)
+            
             # Add to history
             scan_entry = {
                 'id': len(scan_history) + 1,
                 'filename': filename,
+                'hash': file_hash,
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'status': 'Threat detected' if threats_found else 'Clean',
                 'threats_found': threats_found,
+                'from_cache': from_cache,
                 'result': result
             }
             scan_history.append(scan_entry)
@@ -175,6 +186,82 @@ def inventory():
     except:
         engines = {}
     return render_template('inventory.html', engines=engines)
+
+@app.route('/inventory/<engine>/signatures')
+def engine_signatures(engine):
+    try:
+        engines = requests.get(f'{CORE_API_URL}/engines').json()
+        signatures = requests.get(f'{CORE_API_URL}/engines/{engine}/signatures').json()
+    except:
+        engines = {}
+        signatures = {'signatures': []}
+    return render_template('engine_signatures.html', engine=engine, engines=engines, signatures=signatures.get('signatures', []))
+
+@app.route('/inventory/<engine>/signatures/upload', methods=['POST'])
+def upload_signature(engine):
+    file = request.files.get('signature_file')
+    if file:
+        try:
+            files = {'file': (file.filename, file.stream, file.mimetype)}
+            response = requests.post(f'{CORE_API_URL}/engines/{engine}/signatures/upload', files=files)
+            if response.status_code == 200:
+                flash(f'Signatur {file.filename} erfolgreich hochgeladen', 'success')
+            else:
+                flash('Fehler beim Hochladen der Signatur', 'error')
+        except Exception as e:
+            flash(f'Fehler: {str(e)}', 'error')
+    else:
+        flash('Keine Datei ausgewählt', 'error')
+    return redirect(url_for('engine_signatures', engine=engine))
+
+@app.route('/inventory/<engine>/signatures/<signature_name>/delete', methods=['POST'])
+def delete_signature(engine, signature_name):
+    try:
+        response = requests.delete(f'{CORE_API_URL}/engines/{engine}/signatures/{signature_name}')
+        if response.status_code == 200:
+            flash(f'Signatur {signature_name} erfolgreich gelöscht', 'success')
+        else:
+            flash('Fehler beim Löschen der Signatur', 'error')
+    except Exception as e:
+        flash(f'Fehler: {str(e)}', 'error')
+    return redirect(url_for('engine_signatures', engine=engine))
+
+@app.route('/inventory/<engine>/update', methods=['POST'])
+def update_engine_signatures(engine):
+    try:
+        response = requests.post(f'{CORE_API_URL}/engines/{engine}/signatures/update')
+        if response.status_code == 200:
+            data = response.json()
+            flash(f'Signaturen für {engine} erfolgreich aktualisiert! Neue Version: {data.get("version")}', 'success')
+            log_entry = {
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'action': f'Signatures updated for {engine}',
+                'status': 'Success'
+            }
+            maintenance_logs.append(log_entry)
+        else:
+            flash('Fehler beim Aktualisieren der Signaturen', 'error')
+    except Exception as e:
+        flash(f'Fehler: {str(e)}', 'error')
+    return redirect(url_for('inventory'))
+
+@app.route('/inventory/<engine>/auto-update', methods=['POST'])
+def set_auto_update(engine):
+    try:
+        enabled = request.form.get('enabled') == 'true'
+        schedule = request.form.get('schedule', 'daily')
+        
+        response = requests.post(f'{CORE_API_URL}/engines/{engine}/auto-update',
+                               json={'enabled': enabled, 'schedule': schedule})
+        
+        if response.status_code == 200:
+            status = 'aktiviert' if enabled else 'deaktiviert'
+            flash(f'Automatische Updates für {engine} {status} ({schedule})', 'success')
+        else:
+            flash('Fehler beim Aktualisieren der Auto-Update-Einstellungen', 'error')
+    except Exception as e:
+        flash(f'Fehler: {str(e)}', 'error')
+    return redirect(url_for('inventory'))
 
 @app.route('/toggle/<engine>', methods=['POST'])
 def toggle(engine):

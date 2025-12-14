@@ -5,66 +5,103 @@
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">Inventory Management</h1>
-    <p class="page-subtitle">Verwaltung der Scan-Engines und deren Einstellungen</p>
+    <p class="page-subtitle">Verwaltung der Scan-Engines und deren Signatur-Definitionen</p>
 </div>
 
 <div class="card">
     <h2 class="card-header">Scan-Engines</h2>
     
     {% if engines %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Engine Name</th>
-                    <th>Typ</th>
-                    <th>Status</th>
-                    <th>Endpoint</th>
-                    <th>Aktionen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for engine, data in engines.items() %}
-                <tr>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="width: 40px; height: 40px; background: #3b82f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                                {{ engine[0:2]|upper }}
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Engine Name</th>
+                        <th>Status</th>
+                        <th>Signatur-Version</th>
+                        <th>Letztes Update</th>
+                        <th>Auto-Update</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for engine, data in engines.items() %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 40px; height: 40px; background: #3b82f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                    {{ engine[0:2]|upper }}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: #1f2937;">{{ engine|upper }}</div>
+                                    <div style="font-size: 12px; color: #6b7280;">Anti-Malware Engine</div>
+                                </div>
                             </div>
-                            <div>
-                                <div style="font-weight: 600; color: #1f2937;">{{ engine|upper }}</div>
-                                <div style="font-size: 12px; color: #6b7280;">Anti-Malware Engine</div>
+                        </td>
+                        <td>
+                            {% if data.active %}
+                                <span class="badge badge-success">✓ Aktiv</span>
+                            {% else %}
+                                <span class="badge badge-danger">✗ Inaktiv</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code style="font-size: 13px; color: #1f2937; font-weight: 500;">
+                                v{{ data.signature_version }}
+                            </code>
+                        </td>
+                        <td>
+                            <span style="font-size: 13px; color: #6b7280;">
+                                {{ data.last_update }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if data.auto_update %}
+                                <span class="badge badge-success">✓ Aktiviert</span>
+                                <div style="font-size: 11px; color: #6b7280; margin-top: 2px;">
+                                    {{ data.update_schedule }}
+                                </div>
+                            {% else %}
+                                <span class="badge badge-warning">Manuell</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <!-- Aktivieren/Deaktivieren -->
+                                <form action="{{ url_for('toggle', engine=engine) }}" method="post" style="display: inline;">
+                                    <input type="hidden" name="active" value="{{ 'false' if data.active else 'true' }}">
+                                    <button type="submit" class="btn {% if data.active %}btn-secondary{% else %}btn-success{% endif %}" style="padding: 6px 12px; font-size: 12px;">
+                                        {% if data.active %}
+                                            ⏸️ Deaktivieren
+                                        {% else %}
+                                            ▶️ Aktivieren
+                                        {% endif %}
+                                    </button>
+                                </form>
+                                
+                                <!-- Signaturen verwalten -->
+                                <a href="{{ url_for('engine_signatures', engine=engine) }}" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">
+                                    📝 Signaturen
+                                </a>
+                                
+                                <!-- Jetzt aktualisieren -->
+                                <form action="{{ url_for('update_engine_signatures', engine=engine) }}" method="post" style="display: inline;" onsubmit="return confirm('Signaturen für {{ engine }} jetzt aktualisieren?');">
+                                    <button type="submit" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;">
+                                        🔄 Update
+                                    </button>
+                                </form>
+                                
+                                <!-- Auto-Update Toggle -->
+                                <button onclick="showAutoUpdateModal('{{ engine }}', {{ 'true' if data.auto_update else 'false' }}, '{{ data.update_schedule }}')" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                                    ⚙️ Auto-Update
+                                </button>
                             </div>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge badge-info">Scanner</span>
-                    </td>
-                    <td>
-                        {% if data.active %}
-                            <span class="badge badge-success">✓ Aktiv</span>
-                        {% else %}
-                            <span class="badge badge-danger">✗ Inaktiv</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <code style="font-size: 12px; color: #6b7280;">{{ data.url }}</code>
-                    </td>
-                    <td>
-                        <form action="{{ url_for('toggle', engine=engine) }}" method="post" style="display: inline;">
-                            <input type="hidden" name="active" value="{{ 'false' if data.active else 'true' }}">
-                            <button type="submit" class="btn {% if data.active %}btn-danger{% else %}btn-success{% endif %}" style="padding: 6px 12px; font-size: 12px;">
-                                {% if data.active %}
-                                    Deaktivieren
-                                {% else %}
-                                    Aktivieren
-                                {% endif %}
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <div style="margin-top: 30px; padding: 20px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
             <h3 style="margin-bottom: 12px; color: #1e40af;">ℹ️ Engine-Informationen</h3>
@@ -75,8 +112,11 @@
                 <div>
                     <strong>Aktive Engines:</strong> {{ engines.values()|selectattr('active')|list|length }}
                 </div>
+                <div>
+                    <strong>Auto-Update aktiviert:</strong> {{ engines.values()|selectattr('auto_update')|list|length }}
+                </div>
                 <div style="grid-column: 1 / -1;">
-                    <strong>Hinweis:</strong> Deaktivierte Engines werden bei Scans übersprungen und reduzieren die Scan-Zeit.
+                    <strong>Hinweis:</strong> Deaktivierte Engines werden bei Scans übersprungen. Regelmäßige Updates der Signaturen sind für optimalen Schutz essentiell.
                 </div>
             </div>
         </div>
@@ -120,4 +160,59 @@
         </div>
     </div>
 </div>
+
+<!-- Auto-Update Modal -->
+<div id="autoUpdateModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h2 style="margin-top: 0; margin-bottom: 20px;">Automatische Updates konfigurieren</h2>
+        <form id="autoUpdateForm" method="post">
+            <div class="form-group">
+                <label class="form-label">Auto-Update aktivieren</label>
+                <select name="enabled" class="form-control" style="width: 100%;">
+                    <option value="false">Deaktiviert (Manuell)</option>
+                    <option value="true">Aktiviert</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Update-Zeitplan</label>
+                <select name="schedule" class="form-control" style="width: 100%;">
+                    <option value="hourly">Stündlich</option>
+                    <option value="daily">Täglich</option>
+                    <option value="weekly">Wöchentlich</option>
+                    <option value="monthly">Monatlich</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Speichern</button>
+                <button type="button" onclick="closeAutoUpdateModal()" class="btn btn-secondary" style="flex: 1;">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAutoUpdateModal(engine, enabled, schedule) {
+    const modal = document.getElementById('autoUpdateModal');
+    const form = document.getElementById('autoUpdateForm');
+    
+    form.action = '/inventory/' + engine + '/auto-update';
+    form.querySelector('[name="enabled"]').value = enabled;
+    form.querySelector('[name="schedule"]').value = schedule;
+    
+    modal.style.display = 'flex';
+}
+
+function closeAutoUpdateModal() {
+    document.getElementById('autoUpdateModal').style.display = 'none';
+}
+
+// Close modal on background click
+document.getElementById('autoUpdateModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAutoUpdateModal();
+    }
+});
+</script>
 {% endblock %}

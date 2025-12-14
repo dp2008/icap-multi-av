@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ engine|upper }} Signaturen - MetaScanner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">{{ engine|upper }} - Signatur-Verwaltung</h1>
+    <p class="page-subtitle">Virensignaturen und Definitionsdateien verwalten</p>
+</div>
+
+<div style="margin-bottom: 20px;">
+    <a href="{{ url_for('inventory') }}" class="btn btn-secondary">
+        ← Zurück zu Inventory Management
+    </a>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    <div>
+        <div class="card">
+            <h2 class="card-header">Installierte Signaturen</h2>
+            
+            {% if signatures %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Dateiname</th>
+                            <th>Größe</th>
+                            <th>Hochgeladen</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sig in signatures %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: 500;">{{ sig.name }}</div>
+                            </td>
+                            <td>
+                                <span style="color: #6b7280; font-size: 13px;">
+                                    {{ (sig.size / 1024)|round(2) }} KB
+                                </span>
+                            </td>
+                            <td>
+                                <span style="color: #6b7280; font-size: 13px;">
+                                    {{ sig.uploaded }}
+                                </span>
+                            </td>
+                            <td>
+                                <form action="{{ url_for('delete_signature', engine=engine, signature_name=sig.name) }}" method="post" style="display: inline;" onsubmit="return confirm('Signatur {{ sig.name }} wirklich löschen?');">
+                                    <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">
+                                        🗑️ Löschen
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📄</div>
+                    <p style="font-size: 18px; margin-bottom: 8px;">Keine Signaturen hochgeladen</p>
+                    <p style="font-size: 14px; color: #6b7280; margin-bottom: 20px;">
+                        Laden Sie Ihre erste Signaturdatei hoch
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2 class="card-header">ℹ️ Hinweise zu Signaturen</h2>
+            <div style="font-size: 14px; color: #374151; line-height: 1.8;">
+                <h3 style="font-size: 15px; margin-bottom: 10px; color: #1f2937;">Unterstützte Dateiformate für {{ engine|upper }}:</h3>
+                <ul style="padding-left: 20px; margin-bottom: 16px;">
+                    {% if engine == 'clamav' %}
+                        <li>.cvd, .cld - ClamAV Virus Database</li>
+                        <li>.ndb, .ndu - ClamAV Hash Signatures</li>
+                        <li>.hdb, .hsb - MD5 Hash Signatures</li>
+                        <li>.db - Text-basierte Signaturen</li>
+                    {% elif engine == 'yara' %}
+                        <li>.yar, .yara - YARA Rules</li>
+                        <li>.yr - Kompilierte YARA Rules</li>
+                    {% elif engine == 'oletools' %}
+                        <li>.txt - OleTools Regeln</li>
+                        <li>.json - Konfigurationsdateien</li>
+                    {% elif engine == 'capa' %}
+                        <li>.json - CAPA Rules</li>
+                        <li>.yml, .yaml - CAPA Signatures</li>
+                    {% endif %}
+                </ul>
+                
+                <h3 style="font-size: 15px; margin-bottom: 10px; color: #1f2937;">Wichtige Hinweise:</h3>
+                <ul style="padding-left: 20px;">
+                    <li>Signaturen werden nach dem Upload automatisch aktiviert</li>
+                    <li>Ungültige Signaturen können den Scan-Prozess beeinträchtigen</li>
+                    <li>Testen Sie neue Signaturen zuerst in einer Testumgebung</li>
+                    <li>Regelmäßige Updates sind für optimalen Schutz wichtig</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h2 class="card-header">Neue Signatur hochladen</h2>
+            <form action="{{ url_for('upload_signature', engine=engine) }}" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label class="form-label">Signaturdatei auswählen</label>
+                    <input type="file" name="signature_file" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    📤 Hochladen
+                </button>
+            </form>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2 class="card-header">Engine-Informationen</h2>
+            <div style="font-size: 14px; color: #374151;">
+                {% if engines and engine in engines %}
+                    <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                        <div style="color: #6b7280; margin-bottom: 4px;">Engine</div>
+                        <div style="font-weight: 600;">{{ engine|upper }}</div>
+                    </div>
+                    <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                        <div style="color: #6b7280; margin-bottom: 4px;">Status</div>
+                        {% if engines[engine].active %}
+                            <span class="badge badge-success">Aktiv</span>
+                        {% else %}
+                            <span class="badge badge-danger">Inaktiv</span>
+                        {% endif %}
+                    </div>
+                    <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                        <div style="color: #6b7280; margin-bottom: 4px;">Signatur-Version</div>
+                        <code style="font-weight: 600;">v{{ engines[engine].signature_version }}</code>
+                    </div>
+                    <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                        <div style="color: #6b7280; margin-bottom: 4px;">Letztes Update</div>
+                        <div style="font-weight: 500;">{{ engines[engine].last_update }}</div>
+                    </div>
+                    <div style="padding: 12px 0;">
+                        <div style="color: #6b7280; margin-bottom: 4px;">Auto-Update</div>
+                        {% if engines[engine].auto_update %}
+                            <span class="badge badge-success">Aktiviert</span>
+                            <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                                Zeitplan: {{ engines[engine].update_schedule }}
+                            </div>
+                        {% else %}
+                            <span class="badge badge-warning">Deaktiviert</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2 class="card-header">Schnellaktionen</h2>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <form action="{{ url_for('update_engine_signatures', engine=engine) }}" method="post" onsubmit="return confirm('Signaturen jetzt aktualisieren?');">
+                    <button type="submit" class="btn btn-success" style="width: 100%;">
+                        🔄 Signaturen aktualisieren
+                    </button>
+                </form>
+                <a href="{{ url_for('inventory') }}" class="btn btn-secondary" style="width: 100%;">
+                    🏠 Zurück zur Übersicht
+                    </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
-import capa.main
 import tempfile
 import os
+import subprocess
 
 app = Flask(__name__)
 
@@ -11,22 +11,28 @@ def scan():
     if not file:
         return jsonify({'error': 'No file provided'}), 400
 
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.exe') as tmp:
         file.save(tmp.name)
         try:
-            # Run capa analysis
-            rules_path = '/rules'  # Assume rules are available
-            args = capa.main.get_default_config()
-            args.input_file = tmp.name
-            args.rules = rules_path
-            result = capa.main.main(args)
+            # Run capa via subprocess
+            result = subprocess.run(
+                ['capa', tmp.name, '-j'],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
             os.unlink(tmp.name)
-            if result:
-                return jsonify({'status': 'capabilities_detected', 'details': str(result)})
+            
+            if result.returncode == 0:
+                return jsonify({'status': 'analyzed', 'details': result.stdout[:500]})
             else:
-                return jsonify({'status': 'no_capabilities'})
-        except Exception as e:
+                return jsonify({'status': 'no_capabilities', 'info': 'File analyzed'})
+        except subprocess.TimeoutExpired:
             os.unlink(tmp.name)
+            return jsonify({'error': 'Analysis timeout'})
+        except Exception as e:
+            if os.path.exists(tmp.name):
+                os.unlink(tmp.name)
             return jsonify({'error': str(e)})
 
 if __name__ == '__main__':

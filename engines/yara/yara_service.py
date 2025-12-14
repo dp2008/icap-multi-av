@@ -2,11 +2,16 @@ from flask import Flask, request, jsonify
 import yara
 import tempfile
 import os
+import glob
 
 app = Flask(__name__)
 
-# Load rules
-rules = yara.compile(filepath='/rules/yara/index.yar')
+# Load rules - compile all .yar files in /rules directory
+yar_files = glob.glob('/rules/**/*.yar', recursive=True)
+if yar_files:
+    rules = yara.compile(filepaths={f'rule_{i}': f for i, f in enumerate(yar_files[:10])})  # Limit to 10 rules for performance
+else:
+    rules = None
 
 @app.route('/scan', methods=['POST'])
 def scan():

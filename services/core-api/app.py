@@ -9,7 +9,12 @@ from typing import List, Dict
 app = FastAPI()
 
 # Redis for cache
-cache = redis.Redis(host='hash-db', port=6379, decode_responses=True)
+try:
+    cache = redis.Redis(host='hash-db', port=6379, decode_responses=True, socket_connect_timeout=5)
+    cache.ping()
+except Exception as e:
+    print(f"Warning: Redis connection failed: {e}")
+    cache = None
 
 # Engine endpoints (hardcoded for now, later from config)
 engines = {
@@ -36,9 +41,13 @@ async def scan_file(file: UploadFile = File(...)):
     file_hash = hashlib.sha256(file_content).hexdigest()
 
     # Check cache
-    cached_result = cache.get(file_hash)
-    if cached_result:
-        return json.loads(cached_result)
+    if cache:
+        try:
+            cached_result = cache.get(file_hash)
+            if cached_result:
+                return json.loads(cached_result)
+        except:
+            pass
 
     # Parallel scan with active engines
     tasks = [scan_with_engine(name, file_hash, file_content) for name in engines]
@@ -49,7 +58,11 @@ async def scan_file(file: UploadFile = File(...)):
         result.update(res)
 
     # Cache result
-    cache.set(file_hash, json.dumps(result))
+    if cache:
+        try:
+            cache.set(file_hash, json.dumps(result))
+        except:
+            pass
 
     return result
 

@@ -14,6 +14,11 @@ services:
       - "5000:5000"
     depends_on:
       - hash-db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - multiscanner
 
@@ -22,7 +27,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - core-api
+      core-api:
+        condition: service_healthy
     networks:
       - multiscanner
 

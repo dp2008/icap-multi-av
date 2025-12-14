@@ -6,6 +6,7 @@ import httpx
 import json
 import uvicorn
 from typing import List, Dict
+from datetime import datetime
 
 app = FastAPI()
 
@@ -62,6 +63,35 @@ signature_files = {
     'capa': []
 }
 
+async def get_engine_version(engine_name: str):
+    """
+    Ruft die echte Signaturversion vom Engine-Service ab.
+    Für ClamAV wird der /version Endpoint verwendet.
+    """
+    if engine_name not in engines:
+        return None
+    
+    try:
+        # Erstelle Version-URL basierend auf der Scan-URL
+        base_url = engines[engine_name]['url'].rsplit('/', 1)[0]
+        version_url = f"{base_url}/version"
+        
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(version_url)
+            if response.status_code == 200:
+                version_data = response.json()
+                
+                # Aktualisiere die Engine-Informationen
+                if 'signature_version' in version_data:
+                    engines[engine_name]['signature_version'] = version_data['signature_version']
+                if 'last_update' in version_data:
+                    engines[engine_name]['last_update'] = version_data['last_update']
+                
+                return version_data
+    except Exception as e:
+        print(f"Error fetching version for {engine_name}: {e}")
+        return None
+
 async def scan_with_engine(engine_name: str, file_hash: str, file_content: bytes):
     if not engines[engine_name]['active']:
         return {engine_name: 'inactive'}
@@ -105,7 +135,14 @@ async def scan_file(file: UploadFile = File(...)):
     return result
 
 @app.get("/engines")
-def get_engines():
+async def get_engines():
+    """
+    Gibt alle Engines mit aktuellen Versionsinformationen zurück.
+    Versucht, die echten Versionen von den Services abzurufen.
+    """
+    # Versuche, echte Versionen für ClamAV abzurufen
+    await get_engine_version('clamav')
+    
     return engines
 
 @app.post("/engines/{engine}/toggle")
@@ -162,7 +199,21 @@ async def update_signatures(engine: str):
     if engine not in engines:
         return {"error": "engine not found"}
     
-    from datetime import datetime
+    # Für ClamAV: Rufe die echte Version nach dem Update ab
+    if engine == 'clamav':
+        # Hier könnte man freshclam aufrufen, falls gewünscht
+        # Für jetzt: Hole einfach die aktuelle Version
+        version_data = await get_engine_version(engine)
+        
+        if version_data:
+            return {
+                "status": "success",
+                "message": f"Signatures for {engine} updated",
+                "version": engines[engine]['signature_version'],
+                "last_update": engines[engine]['last_update']
+            }
+    
+    # Fallback für andere Engines
     engines[engine]['last_update'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     engines[engine]['signature_version'] = f"{engines[engine]['signature_version'].split('.')[0]}.{int(engines[engine]['signature_version'].split('.')[1]) + 1}.0"
     

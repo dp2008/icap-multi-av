@@ -1,11 +1,122 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Scan Result</title>
-</head>
-<body>
-    <h1>Scan Result</h1>
-    <pre>{{ result | tojson(indent=2) }}</pre>
-    <a href="/">Back</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Scan-Ergebnis - MetaScanner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Scan-Ergebnis</h1>
+    <p class="page-subtitle">Detaillierte Analyseergebnisse für: <strong>{{ filename }}</strong></p>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    <div>
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 class="card-header" style="margin-bottom: 0;">Scan-Übersicht</h2>
+                {% if threats_found %}
+                    <span class="badge badge-danger" style="font-size: 16px; padding: 8px 16px;">
+                        ⚠️ BEDROHUNG ERKANNT
+                    </span>
+                {% else %}
+                    <span class="badge badge-success" style="font-size: 16px; padding: 8px 16px;">
+                        ✓ SAUBER
+                    </span>
+                {% endif %}
+            </div>
+
+            <div style="padding: 16px; background: {% if threats_found %}#fee2e2{% else %}#d1fae5{% endif %}; border-left: 4px solid {% if threats_found %}#ef4444{% else %}#10b981{% endif %}; border-radius: 6px; margin-bottom: 20px;">
+                <p style="font-size: 14px; color: #1f2937; margin: 0;">
+                    {% if threats_found %}
+                        <strong>Warnung:</strong> Mindestens eine Engine hat eine potenzielle Bedrohung in dieser Datei erkannt. Bitte überprüfen Sie die Details unten.
+                    {% else %}
+                        <strong>Ergebnis:</strong> Keine Bedrohungen wurden von den aktiven Scan-Engines erkannt. Die Datei scheint sicher zu sein.
+                    {% endif %}
+                </p>
+            </div>
+
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #1f2937;">Engine-Ergebnisse</h3>
+            
+            {% for engine, engine_result in result.items() %}
+            <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; background: #3b82f6; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">
+                            {{ engine[0:2]|upper }}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; color: #1f2937; font-size: 15px;">{{ engine|upper }}</div>
+                        </div>
+                    </div>
+                    {% if engine_result == 'inactive' %}
+                        <span class="badge badge-warning">Inaktiv</span>
+                    {% elif engine_result is mapping and engine_result.get('error') %}
+                        <span class="badge badge-danger">Fehler</span>
+                    {% elif 'detected' in (engine_result|string).lower() or 'malicious' in (engine_result|string).lower() or 'virus' in (engine_result|string).lower() %}
+                        <span class="badge badge-danger">Bedrohung erkannt</span>
+                    {% else %}
+                        <span class="badge badge-success">Sauber</span>
+                    {% endif %}
+                </div>
+                
+                <div style="background: #f9fafb; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; overflow-x: auto;">
+                    <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{ engine_result | tojson(indent=2) }}</pre>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h2 class="card-header">Datei-Informationen</h2>
+            <div style="font-size: 14px;">
+                <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                    <div style="color: #6b7280; margin-bottom: 4px;">Dateiname</div>
+                    <div style="font-weight: 600; color: #1f2937; word-break: break-all;">{{ filename }}</div>
+                </div>
+                <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
+                    <div style="color: #6b7280; margin-bottom: 4px;">Gescannte Engines</div>
+                    <div style="font-weight: 600; color: #1f2937;">{{ result|length }}</div>
+                </div>
+                <div style="padding: 12px 0;">
+                    <div style="color: #6b7280; margin-bottom: 4px;">Status</div>
+                    {% if threats_found %}
+                        <div style="font-weight: 600; color: #dc2626;">Bedrohung erkannt</div>
+                    {% else %}
+                        <div style="font-weight: 600; color: #059669;">Keine Bedrohungen</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2 class="card-header">Aktionen</h2>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="{{ url_for('scan_file_page') }}" class="btn btn-primary" style="width: 100%;">
+                    🔍 Weitere Datei scannen
+                </a>
+                <a href="{{ url_for('history') }}" class="btn btn-secondary" style="width: 100%;">
+                    📋 Zum Verlauf
+                </a>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary" style="width: 100%;">
+                    🏠 Zum Dashboard
+                </a>
+            </div>
+        </div>
+
+        {% if threats_found %}
+        <div class="card" style="margin-top: 20px; border-left: 4px solid #ef4444;">
+            <h2 class="card-header">⚠️ Empfohlene Maßnahmen</h2>
+            <div style="font-size: 14px; color: #374151; line-height: 1.6;">
+                <ul style="padding-left: 20px; margin: 0;">
+                    <li style="margin-bottom: 8px;">Löschen Sie die Datei oder verschieben Sie sie in Quarantäne</li>
+                    <li style="margin-bottom: 8px;">Führen Sie einen vollständigen System-Scan durch</li>
+                    <li style="margin-bottom: 8px;">Überprüfen Sie die Quelle der Datei</li>
+                    <li>Informieren Sie ggf. Ihren IT-Sicherheitsbeauftragten</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

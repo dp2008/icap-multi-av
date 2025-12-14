@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Management - MetaScanner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Inventory Management</h1>
+    <p class="page-subtitle">Verwaltung der Scan-Engines und deren Einstellungen</p>
+</div>
+
+<div class="card">
+    <h2 class="card-header">Scan-Engines</h2>
+    
+    {% if engines %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Engine Name</th>
+                    <th>Typ</th>
+                    <th>Status</th>
+                    <th>Endpoint</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for engine, data in engines.items() %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 40px; height: 40px; background: #3b82f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                {{ engine[0:2]|upper }}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600; color: #1f2937;">{{ engine|upper }}</div>
+                                <div style="font-size: 12px; color: #6b7280;">Anti-Malware Engine</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-info">Scanner</span>
+                    </td>
+                    <td>
+                        {% if data.active %}
+                            <span class="badge badge-success">✓ Aktiv</span>
+                        {% else %}
+                            <span class="badge badge-danger">✗ Inaktiv</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <code style="font-size: 12px; color: #6b7280;">{{ data.url }}</code>
+                    </td>
+                    <td>
+                        <form action="{{ url_for('toggle', engine=engine) }}" method="post" style="display: inline;">
+                            <input type="hidden" name="active" value="{{ 'false' if data.active else 'true' }}">
+                            <button type="submit" class="btn {% if data.active %}btn-danger{% else %}btn-success{% endif %}" style="padding: 6px 12px; font-size: 12px;">
+                                {% if data.active %}
+                                    Deaktivieren
+                                {% else %}
+                                    Aktivieren
+                                {% endif %}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="margin-top: 30px; padding: 20px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+            <h3 style="margin-bottom: 12px; color: #1e40af;">ℹ️ Engine-Informationen</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; font-size: 14px; color: #1f2937;">
+                <div>
+                    <strong>Gesamt Engines:</strong> {{ engines|length }}
+                </div>
+                <div>
+                    <strong>Aktive Engines:</strong> {{ engines.values()|selectattr('active')|list|length }}
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <strong>Hinweis:</strong> Deaktivierte Engines werden bei Scans übersprungen und reduzieren die Scan-Zeit.
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">⚙️</div>
+            <p>Keine Engines konfiguriert</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2 class="card-header">Engine-Beschreibungen</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-bottom: 8px; font-size: 16px;">🛡️ ClamAV</h3>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                Open-Source Antivirus-Engine zur Erkennung von Viren, Malware, Trojanern und anderen bösartigen Bedrohungen.
+            </p>
+        </div>
+        
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-bottom: 8px; font-size: 16px;">🔍 YARA</h3>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                Pattern-Matching-Engine zur Identifizierung und Klassifizierung von Malware-Samples basierend auf Regelsets.
+            </p>
+        </div>
+        
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-bottom: 8px; font-size: 16px;">📄 OleTools</h3>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                Spezialisiert auf die Analyse von Microsoft Office-Dokumenten (Word, Excel, PowerPoint) und Makros.
+            </p>
+        </div>
+        
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-bottom: 8px; font-size: 16px;">🔬 CAPA</h3>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                Capability Analysis Tool zur Identifizierung von Fähigkeiten und Verhaltensweisen in ausführbaren Dateien.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Konfiguration - MetaScanner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Import/Export Configuration</h1>
+    <p class="page-subtitle">Konfigurationen importieren und exportieren</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <h2 class="card-header">📤 Konfiguration exportieren</h2>
+        <p style="color: #6b7280; margin-bottom: 20px; font-size: 14px;">
+            Exportiert die aktuelle Systemkonfiguration in eine JSON-Datei. Diese Datei enthält Engine-Einstellungen und kann für Backups oder zum Übertragen auf andere Systeme verwendet werden.
+        </p>
+        
+        <div style="padding: 16px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 6px; margin-bottom: 20px;">
+            <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 14px; font-weight: 600;">Exportierte Daten:</h3>
+            <ul style="font-size: 14px; color: #1f2937; padding-left: 20px; line-height: 1.8;">
+                <li>Engine-Konfigurationen (aktiv/inaktiv)</li>
+                <li>Engine-URLs</li>
+                <li>Zeitstempel des Exports</li>
+                <li>Versionsinformationen</li>
+            </ul>
+        </div>
+
+        <form action="{{ url_for('export_config') }}" method="post">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                📥 Konfiguration exportieren
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2 class="card-header">📥 Konfiguration importieren</h2>
+        <p style="color: #6b7280; margin-bottom: 20px; font-size: 14px;">
+            Importiert eine zuvor exportierte Konfigurationsdatei. Die aktuellen Einstellungen werden durch die importierten Werte ersetzt.
+        </p>
+
+        <div style="padding: 16px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; margin-bottom: 20px;">
+            <h3 style="color: #92400e; margin-bottom: 8px; font-size: 14px; font-weight: 600;">⚠️ Wichtige Hinweise:</h3>
+            <ul style="font-size: 14px; color: #1f2937; padding-left: 20px; line-height: 1.8;">
+                <li>Aktuelle Einstellungen werden überschrieben</li>
+                <li>Nur JSON-Dateien werden akzeptiert</li>
+                <li>Datei muss vom gleichen System exportiert sein</li>
+            </ul>
+        </div>
+
+        <form action="{{ url_for('import_config') }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label">Konfigurationsdatei auswählen</label>
+                <input type="file" name="config_file" class="form-control" accept=".json" required>
+            </div>
+            <button type="submit" class="btn btn-success" style="width: 100%;">
+                📤 Konfiguration importieren
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2 class="card-header">📋 Anwendungsfälle</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-bottom: 8px; font-size: 15px; font-weight: 600;">💾 Backup</h3>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                Erstellen Sie regelmäßige Backups Ihrer Konfiguration, um sie bei Bedarf wiederherstellen zu können.
+            </p>
+        </div>
+
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-bottom: 8px; font-size: 15px; font-weight: 600;">🔄 Migration</h3>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                Übertragen Sie Ihre Konfiguration einfach auf andere MetaScanner-Instanzen.
+            </p>
+        </div>
+
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-bottom: 8px; font-size: 15px; font-weight: 600;">📝 Versionskontrolle</h3>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                Speichern Sie verschiedene Konfigurationsversionen für unterschiedliche Szenarien.
+            </p>
+        </div>
+
+        <div style="padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="color: #1f2937; margin-bottom: 8px; font-size: 15px; font-weight: 600;">👥 Teamarbeit</h3>
+            <p style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                Teilen Sie Konfigurationen mit Ihrem Team für konsistente Einstellungen.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2 class="card-header">📖 Beispiel-Konfiguration</h2>
+    <pre style="background: #1f2937; color: #e5e7eb; padding: 20px; border-radius: 6px; overflow-x: auto; font-size: 13px;"><code>{
+  "engines": {
+    "clamav": {
+      "url": "http://clamav:8080/scan",
+      "active": true
+    },
+    "yara": {
+      "url": "http://yara:8080/scan",
+      "active": true
+    },
+    "oletools": {
+      "url": "http://oletools:8080/scan",
+      "active": false
+    },
+    "capa": {
+      "url": "http://capa:8080/scan",
+      "active": true
+    }
+  },
+  "export_date": "2024-12-14 14:30:00",
+  "version": "1.0"
+}</code></pre>
+</div>
+{% endblock %}

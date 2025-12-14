@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Ordner-Scan-Ergebnisse - MetaScanner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Ordner-Scan-Ergebnisse</h1>
+    <p class="page-subtitle">Ergebnisse für {{ results|length }} gescannte Datei(en)</p>
+</div>
+
+<div style="margin-bottom: 20px;">
+    <div class="stats-grid" style="margin-bottom: 0;">
+        <div class="stat-card">
+            <div class="stat-label">Gescannte Dateien</div>
+            <div class="stat-value">{{ results|length }}</div>
+        </div>
+        
+        <div class="stat-card danger">
+            <div class="stat-label">Bedrohungen erkannt</div>
+            <div class="stat-value">
+                {{ results|selectattr('threats_found', 'equalto', True)|list|length }}
+            </div>
+        </div>
+        
+        <div class="stat-card success">
+            <div class="stat-label">Saubere Dateien</div>
+            <div class="stat-value">
+                {{ results|selectattr('status', 'equalto', 'Clean')|list|length }}
+            </div>
+        </div>
+        
+        <div class="stat-card warning">
+            <div class="stat-label">Fehler</div>
+            <div class="stat-value">
+                {{ results|selectattr('status', 'equalto', 'Error')|list|length }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-header">Detaillierte Ergebnisse</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Dateiname</th>
+                <th>Status</th>
+                <th>Zeitpunkt</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">{{ result.filename }}</div>
+                </td>
+                <td>
+                    {% if result.status == 'Error' %}
+                        <span class="badge badge-warning">⚠️ Fehler</span>
+                        <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                            {{ result.error }}
+                        </div>
+                    {% elif result.threats_found %}
+                        <span class="badge badge-danger">⚠️ Bedrohung erkannt</span>
+                    {% else %}
+                        <span class="badge badge-success">✓ Sauber</span>
+                    {% endif %}
+                </td>
+                <td>{{ result.timestamp }}</td>
+                <td>
+                    {% if result.id %}
+                        <a href="{{ url_for('history_detail', scan_id=result.id) }}" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">
+                            Details
+                        </a>
+                    {% else %}
+                        <span style="color: #6b7280; font-size: 12px;">Keine Details verfügbar</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div style="margin-top: 20px; display: flex; gap: 12px;">
+    <a href="{{ url_for('scan_file_page') }}" class="btn btn-primary">
+        🔍 Weitere Dateien scannen
+    </a>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary">
+        📋 Zum Verlauf
+    </a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        🏠 Zum Dashboard
+    </a>
+</div>
+
+{% if results|selectattr('threats_found', 'equalto', True)|list|length > 0 %}
+<div class="card" style="margin-top: 20px; border-left: 4px solid #ef4444;">
+    <h2 class="card-header">⚠️ Warnung</h2>
+    <p style="font-size: 14px; color: #374151; line-height: 1.6;">
+        <strong>Bedrohungen wurden in {{ results|selectattr('threats_found', 'equalto', True)|list|length }} Datei(en) erkannt.</strong><br><br>
+        Empfohlene Maßnahmen:
+    </p>
+    <ul style="font-size: 14px; color: #374151; line-height: 1.6; padding-left: 20px;">
+        <li style="margin-bottom: 8px;">Überprüfen Sie alle betroffenen Dateien im Detail</li>
+        <li style="margin-bottom: 8px;">Löschen oder isolieren Sie verdächtige Dateien</li>
+        <li style="margin-bottom: 8px;">Führen Sie einen vollständigen System-Scan durch</li>
+        <li>Informieren Sie Ihren IT-Sicherheitsbeauftragten</li>
+    </ul>
+</div>
+{% endif %}
+{% endblock %}

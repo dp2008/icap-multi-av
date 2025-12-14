@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Scan-Verlauf - MetaScanner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Scan-Verlauf (Processing History)</h1>
+    <p class="page-subtitle">Übersicht aller durchgeführten Scans</p>
+</div>
+
+<div class="card">
+    {% if scans %}
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 14px; color: #6b7280;">
+                Gesamt: <strong>{{ scans|length }}</strong> Scans
+            </div>
+            <form action="{{ url_for('clear_history') }}" method="post" style="display: inline;" onsubmit="return confirm('Sind Sie sicher, dass Sie den gesamten Verlauf löschen möchten?');">
+                <button type="submit" class="btn btn-danger">
+                    🗑️ Verlauf löschen
+                </button>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Dateiname</th>
+                    <th>Zeitpunkt</th>
+                    <th>Status</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr>
+                    <td>#{{ scan.id }}</td>
+                    <td>
+                        <div style="font-weight: 500;">{{ scan.filename }}</div>
+                    </td>
+                    <td>{{ scan.timestamp }}</td>
+                    <td>
+                        {% if scan.threats_found %}
+                            <span class="badge badge-danger">⚠️ Bedrohung erkannt</span>
+                        {% else %}
+                            <span class="badge badge-success">✓ Sauber</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('history_detail', scan_id=scan.id) }}" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">
+                            Details anzeigen
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <p style="font-size: 18px; margin-bottom: 8px;">Noch keine Scans im Verlauf</p>
+            <p style="font-size: 14px; color: #6b7280; margin-bottom: 20px;">
+                Starten Sie Ihren ersten Scan, um Ergebnisse hier zu sehen
+            </p>
+            <a href="{{ url_for('scan_file_page') }}" class="btn btn-primary">
+                🔍 Jetzt scannen
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

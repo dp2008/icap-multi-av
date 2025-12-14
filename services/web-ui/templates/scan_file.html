@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Dateien scannen - MetaScanner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Dateien scannen</h1>
+    <p class="page-subtitle">Einzelne Dateien oder ganze Ordner auf Bedrohungen scannen</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    <div>
+        <div class="card">
+            <h2 class="card-header">Einzelne Datei scannen</h2>
+            <form action="{{ url_for('scan') }}" method="post" enctype="multipart/form-data">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <p style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">Datei auswählen</p>
+                    <p style="font-size: 14px; color: #6b7280;">Klicken Sie hier oder ziehen Sie eine Datei hinein</p>
+                    <input type="file" name="file" id="fileInput" required style="display: none;" onchange="updateFileName(this)">
+                </div>
+                <div id="fileName" style="margin-top: 12px; font-size: 14px; color: #6b7280;"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+                    🔍 Datei scannen
+                </button>
+            </form>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2 class="card-header">Ordner scannen (Mehrere Dateien)</h2>
+            <form action="{{ url_for('scan_folder') }}" method="post" enctype="multipart/form-data">
+                <div class="upload-area" onclick="document.getElementById('folderInput').click()">
+                    <div class="upload-icon">📂</div>
+                    <p style="font-size: 16px; color: #1f2937; margin-bottom: 8px;">Mehrere Dateien auswählen</p>
+                    <p style="font-size: 14px; color: #6b7280;">Wählen Sie mehrere Dateien gleichzeitig aus</p>
+                    <input type="file" name="folder" id="folderInput" multiple required style="display: none;" onchange="updateFolderInfo(this)">
+                </div>
+                <div id="folderInfo" style="margin-top: 12px; font-size: 14px; color: #6b7280;"></div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">
+                    🔍 Alle Dateien scannen
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h2 class="card-header">Aktive Scan-Engines</h2>
+            {% if engines %}
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    {% for engine, data in engines.items() %}
+                    <div style="padding: 10px; background: {% if data.active %}#d1fae5{% else %}#fee2e2{% endif %}; border-radius: 6px;">
+                        <div style="font-weight: 600; color: #1f2937;">{{ engine|upper }}</div>
+                        <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                            {% if data.active %}
+                                ✓ Bereit zum Scannen
+                            {% else %}
+                                ✗ Deaktiviert
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <p>Keine Engines verfügbar</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2 class="card-header">ℹ️ Hinweise</h2>
+            <div style="font-size: 14px; color: #6b7280; line-height: 1.6;">
+                <ul style="padding-left: 20px;">
+                    <li style="margin-bottom: 8px;">Maximale Dateigröße: 100 MB</li>
+                    <li style="margin-bottom: 8px;">Unterstützte Formate: Alle Dateitypen</li>
+                    <li style="margin-bottom: 8px;">Scans werden mit allen aktiven Engines durchgeführt</li>
+                    <li style="margin-bottom: 8px;">Ergebnisse werden automatisch im Verlauf gespeichert</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2 class="card-header">⚡ Schnellzugriff</h2>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="{{ url_for('history') }}" class="btn btn-secondary" style="width: 100%;">
+                    📋 Scan-Verlauf
+                </a>
+                <a href="{{ url_for('inventory') }}" class="btn btn-secondary" style="width: 100%;">
+                    ⚙️ Engines verwalten
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateFileName(input) {
+    const fileNameDiv = document.getElementById('fileName');
+    if (input.files.length > 0) {
+        fileNameDiv.textContent = '✓ Ausgewählte Datei: ' + input.files[0].name;
+        fileNameDiv.style.color = '#10b981';
+        fileNameDiv.style.fontWeight = '500';
+    }
+}
+
+function updateFolderInfo(input) {
+    const folderInfoDiv = document.getElementById('folderInfo');
+    if (input.files.length > 0) {
+        folderInfoDiv.textContent = '✓ ' + input.files.length + ' Datei(en) ausgewählt';
+        folderInfoDiv.style.color = '#10b981';
+        folderInfoDiv.style.fontWeight = '500';
+    }
+}
+</script>
+{% endblock %}

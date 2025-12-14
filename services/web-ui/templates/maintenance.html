@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Wartung - MetaScanner{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Regular Maintenance</h1>
+    <p class="page-subtitle">Systemwartung und Verwaltung</p>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+    <div class="card">
+        <h2 class="card-header">🗑️ Cache leeren</h2>
+        <p style="color: #6b7280; margin-bottom: 20px; font-size: 14px;">
+            Löscht alle gecachten Scan-Ergebnisse aus der Redis-Datenbank. Dies kann helfen, Speicherplatz freizugeben und Probleme mit veralteten Ergebnissen zu beheben.
+        </p>
+        <form action="{{ url_for('clear_cache') }}" method="post" onsubmit="return confirm('Möchten Sie den Cache wirklich leeren?');">
+            <button type="submit" class="btn btn-danger" style="width: 100%;">
+                Cache leeren
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2 class="card-header">📋 Verlauf löschen</h2>
+        <p style="color: #6b7280; margin-bottom: 20px; font-size: 14px;">
+            Entfernt alle Einträge aus der Scan-Historie. Diese Aktion kann nicht rückgängig gemacht werden.
+        </p>
+        <form action="{{ url_for('clear_history') }}" method="post" onsubmit="return confirm('Möchten Sie den gesamten Verlauf wirklich löschen?');">
+            <button type="submit" class="btn btn-danger" style="width: 100%;">
+                Verlauf löschen
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2 class="card-header">📊 Systeminfo</h2>
+        <div style="font-size: 14px; color: #374151;">
+            <div style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                <strong>Status:</strong> 
+                <span class="badge badge-success">Online</span>
+            </div>
+            <div style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                <strong>Version:</strong> 1.0.0
+            </div>
+            <div style="padding: 10px 0;">
+                <strong>Plattform:</strong> Docker Container
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-header">Wartungsprotokoll</h2>
+    {% if logs %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Zeitpunkt</th>
+                    <th>Aktion</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.timestamp }}</td>
+                    <td>{{ log.action }}</td>
+                    <td>
+                        <span class="badge badge-success">{{ log.status }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <p>Noch keine Wartungsaktionen durchgeführt</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="card" style="margin-top: 20px;">
+    <h2 class="card-header">ℹ️ Wartungsempfehlungen</h2>
+    <div style="display: grid; gap: 15px;">
+        <div style="padding: 16px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 6px;">
+            <h3 style="color: #1e40af; margin-bottom: 8px; font-size: 15px;">Cache-Verwaltung</h3>
+            <p style="font-size: 14px; color: #1f2937; line-height: 1.5;">
+                Der Cache sollte regelmäßig geleert werden, wenn Sie feststellen, dass die Ergebnisse nicht mehr aktuell sind oder wenn Speicherprobleme auftreten.
+            </p>
+        </div>
+
+        <div style="padding: 16px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px;">
+            <h3 style="color: #92400e; margin-bottom: 8px; font-size: 15px;">Verlaufsbereinigung</h3>
+            <p style="font-size: 14px; color: #1f2937; line-height: 1.5;">
+                Löschen Sie alte Scan-Verläufe, um die Übersichtlichkeit zu verbessern und Speicherplatz zu sparen. Empfohlen: Monatliche Bereinigung.
+            </p>
+        </div>
+
+        <div style="padding: 16px; background: #d1fae5; border-left: 4px solid #10b981; border-radius: 6px;">
+            <h3 style="color: #065f46; margin-bottom: 8px; font-size: 15px;">Engine-Updates</h3>
+            <p style="font-size: 14px; color: #1f2937; line-height: 1.5;">
+                Stellen Sie sicher, dass alle Scan-Engines regelmäßig aktualisiert werden, um die neuesten Bedrohungssignaturen zu erhalten. Dies kann durch Neustart der Container erfolgen.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

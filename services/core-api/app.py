@@ -73,8 +73,20 @@ def get_engines():
     return engines
 
 @app.post("/engines/{engine}/toggle")
-def toggle_engine(engine: str, active: bool):
+async def toggle_engine(engine: str, data: dict):
+    active = data.get('active', False)
+    
     if engine in engines:
         engines[engine]['active'] = active
         return {"status": "updated"}
     return {"error": "engine not found"}
+
+@app.post("/maintenance/clear-cache")
+def clear_cache():
+    if cache:
+        try:
+            cache.flushdb()
+            return {"status": "success", "message": "Cache cleared"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+    return {"status": "error", "message": "Cache not available"}

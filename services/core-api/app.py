@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File
 import hashlib
 import redis
 import asyncio
-import requests
+import httpx
 import json
 from typing import List, Dict
 
@@ -22,11 +22,13 @@ engines = {
 async def scan_with_engine(engine_name: str, file_hash: str, file_content: bytes):
     if not engines[engine_name]['active']:
         return {engine_name: 'inactive'}
-    try:
-        response = requests.post(engines[engine_name]['url'], files={'file': file_content}, timeout=30)
-        return {engine_name: response.json()}
-    except Exception as e:
-        return {engine_name: {'error': str(e)}}
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            files = {'file': ('uploaded_file', file_content, 'application/octet-stream')}
+            response = await client.post(engines[engine_name]['url'], files=files)
+            return {engine_name: response.json()}
+        except Exception as e:
+            return {engine_name: {'error': str(e)}}
 
 @app.post("/scan")
 async def scan_file(file: UploadFile = File(...)):

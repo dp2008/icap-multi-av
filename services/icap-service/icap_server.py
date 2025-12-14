@@ -1,5 +1,5 @@
-import icap
-from icap import ICAPServer, BaseICAPRequestHandler
+import pyicap
+from pyicap import ICAPServer, BaseICAPRequestHandler
 import requests
 import io
 

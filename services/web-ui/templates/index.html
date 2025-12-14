@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multi-Engine Virenscanner</title>
+</head>
+<body>
+    <h1>Multi-Engine Virenscanner</h1>
+    <form action="/scan" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" required>
+        <button type="submit">Scan</button>
+    </form>
+    <h2>Engines</h2>
+    <ul>
+        {% for engine, data in engines.items() %}
+        <li>
+            {{ engine }}: {{ 'Active' if data.active else 'Inactive' }}
+            <form action="/toggle/{{ engine }}" method="post" style="display:inline;">
+                <input type="hidden" name="active" value="{{ 'false' if data.active else 'true' }}">
+                <button type="submit">{{ 'Deactivate' if data.active else 'Activate' }}</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -1,0 +1,2 @@
+yara-python==4.2.3
+flask==2.3.3
